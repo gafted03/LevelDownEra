@@ -155,6 +155,11 @@ xi.moghouse.onMoghouseZoneIn = function(player, prevZone)
         xi.moghouse.set2ndFloorStyle(player, nation)
     end
 
+    -- TODO: If you zone in with Spinet, Nanaa Mihgo Statue I, or Nanaa Mihgo Statue II installed different
+    --     : music will play in the mog house. This music will also play when you place those items.
+    --     : If Orchestrion is installed, those songs will not play automatically but will be available from
+    --     : the orchestrion menu.
+
     return cs
 end
 

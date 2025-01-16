@@ -976,26 +976,43 @@ void CZoneEntities::SpawnPCs(CCharEntity* PChar)
     }
 }
 
-void CZoneEntities::SpawnMoogle(CCharEntity* PChar)
+void CZoneEntities::SpawnConditionalNPCs(CCharEntity* PChar)
 {
     TracyZoneScoped;
 
-    // If on Moghouse2F; don't spawn the Moogle
-    if (PChar->profile.mhflag & 0x40)
+    // Player information
+    const bool inMogHouse        = PChar->m_moghouseID > 0;
+    const bool onMH2F            = PChar->profile.mhflag & 0x40;
+    const bool orchestrionPlaced = charutils::isOrchestrionPlaced(PChar);
+
+    // NOTE: We're not changing the NPC's status to NORMAL here, because we don't want them to be visible to all players.
+    //     : We're sending updates AS IF they were visible, but only to this current player based on their conditions.
+    const auto toggleVisibilityForPlayer = [PChar](CNpcEntity* PNpc, bool visible, bool forceHide)
     {
-        return;
-    }
+        if (visible)
+        {
+            PNpc->status = STATUS_TYPE::NORMAL;
+            PChar->updateEntityPacket(PNpc, ENTITY_SPAWN, UPDATE_ALL_MOB);
+            PNpc->status = STATUS_TYPE::DISAPPEAR;
+        }
+    };
 
     for (EntityList_t::const_iterator it = m_npcList.begin(); it != m_npcList.end(); ++it)
     {
         CNpcEntity* PCurrentNpc = (CNpcEntity*)it->second;
 
-        if (PCurrentNpc->loc.p.z == 1.5 && PCurrentNpc->look.face == 0x52)
+        // TODO: Come up with a sane way to mark "You only" NPCs
+
+        if (PCurrentNpc->name == "Moogle" && PCurrentNpc->loc.p.z == 1.5 && PCurrentNpc->look.face == 0x52)
         {
-            PCurrentNpc->status = STATUS_TYPE::NORMAL;
-            PChar->updateEntityPacket(PCurrentNpc, ENTITY_SPAWN, UPDATE_ALL_MOB);
-            PCurrentNpc->status = STATUS_TYPE::DISAPPEAR;
-            return;
+            toggleVisibilityForPlayer(PCurrentNpc, inMogHouse && !onMH2F, false);
+            continue;
+        }
+
+        if (PCurrentNpc->name == "Symphonic_Curator")
+        {
+            toggleVisibilityForPlayer(PCurrentNpc, inMogHouse && orchestrionPlaced, true);
+            continue;
         }
     }
 }
